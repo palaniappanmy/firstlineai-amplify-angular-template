@@ -1,0 +1,192 @@
+<header class="app-header">
+  <div class="header-brand">FirstLine AI</div>
+  <div class="header-user">Dr. Smith</div>
+</header>
+
+<main class="page-shell">
+  <section class="page-title-wrap">
+    <h1>Appointment Booking</h1>
+  </section>
+
+  @if (successBanner()) {
+  <section class="banner banner-success" role="status" aria-live="polite">
+    {{ successBanner() }}
+  </section>
+  }
+
+  @if (errorBanner()) {
+  <section class="banner banner-error" role="alert">
+    {{ errorBanner() }}
+  </section>
+  }
+
+  <section class="content-grid">
+    <article class="card left-panel">
+      <h2>Appointment Details</h2>
+
+      <form [formGroup]="appointmentForm" (ngSubmit)="analyzePatient()" novalidate>
+        <div class="field">
+          <label for="patientName">Patient Name</label>
+          <input id="patientName" type="text" formControlName="patientName" />
+          @if (isFieldInvalid('patientName')) {
+          <small class="field-error">Patient name is required.</small>
+          }
+        </div>
+
+        <div class="field">
+          <label for="appointmentDate">Appointment Date</label>
+          <input id="appointmentDate" type="date" formControlName="appointmentDate" />
+          @if (isFieldInvalid('appointmentDate')) {
+          <small class="field-error">Appointment date is required.</small>
+          }
+        </div>
+
+        <div class="field">
+          <label for="appointmentTime">Appointment Time</label>
+          <input id="appointmentTime" type="time" formControlName="appointmentTime" />
+          @if (isFieldInvalid('appointmentTime')) {
+          <small class="field-error">Appointment time is required.</small>
+          }
+        </div>
+
+        <div class="field">
+          <label for="physician">Physician</label>
+          <input id="physician" type="text" formControlName="physician" />
+          @if (isFieldInvalid('physician')) {
+          <small class="field-error">Physician is required.</small>
+          }
+        </div>
+
+        <div class="field">
+          <label for="medicalHistory">Choose Medical History JSON</label>
+          <input
+            id="medicalHistory"
+            type="file"
+            accept="application/json,.json"
+            (change)="onFileSelected($event)" />
+          @if (isFieldInvalid('medicalHistoryFile')) {
+          <small class="field-error">A medical history JSON file is required.</small>
+          }
+        </div>
+
+        <p class="selected-file">
+          <strong>Selected File:</strong>
+          <span>{{ selectedFileName() }}</span>
+        </p>
+
+        <button
+          class="analyze-btn"
+          type="submit"
+          [disabled]="appointmentForm.invalid || loading()">
+          @if (loading()) {
+          <span class="spinner" aria-hidden="true"></span>
+          <span>Analyzing...</span>
+          } @else {
+          <span>Analyze Patient</span>
+          }
+        </button>
+      </form>
+    </article>
+
+    <section class="right-panel">
+      <article class="card">
+        <h2>Patient AI Summary</h2>
+
+        @if (!hasResult()) {
+        <p class="placeholder">
+          Upload a patient history JSON and click Analyze Patient
+        </p>
+        }
+
+        @if (patientSummary(); as overview) {
+        <div class="overview-grid">
+          <div>
+            <h3>Patient ID</h3>
+            <p>{{ overview.patientId }}</p>
+          </div>
+          <div>
+            <h3>Storage Status</h3>
+            <p class="status-inline" [class.stored]="overview.storageStatus === 'Successfully Stored'">
+              <span class="status-icon" aria-hidden="true"></span>
+              {{ overview.storageStatus }}
+            </p>
+          </div>
+          <div>
+            <h3>Analysis Status</h3>
+            <p>{{ overview.analysisStatus }}</p>
+          </div>
+        </div>
+        }
+      </article>
+
+      @if (insights(); as data) {
+      <article class="card">
+        <h2>Clinical Decision Package</h2>
+
+        <section class="section-block">
+          <h3>Patient Summary</h3>
+          <p>{{ data.patientSummary }}</p>
+        </section>
+
+        <section class="section-block">
+          <h3>Clinical Trajectory</h3>
+          @if (trajectorySteps().length > 1) {
+          <ul class="trajectory-list">
+            @for (step of trajectorySteps(); track step; let isLast = $last) {
+            <li>
+              <span>{{ step }}</span>
+              @if (!isLast) {
+              <span class="trajectory-arrow">v</span>
+              }
+            </li>
+            }
+          </ul>
+          } @else {
+          <p>{{ data.clinicalTrajectory }}</p>
+          }
+        </section>
+
+        <section class="assessment-grid">
+          @for (assessment of assessmentCards(); track trackByAssessmentTitle($index, assessment)) {
+          <article class="assessment-card" [ngClass]="riskClass(assessment.level)">
+            <h3>{{ assessment.title }}</h3>
+            <p>{{ assessment.value }}</p>
+          </article>
+          }
+        </section>
+
+        <section class="section-block">
+          <h3>Care Gap Summary</h3>
+          <p class="status-inline stored">
+            <span class="status-icon" aria-hidden="true"></span>
+            {{ data.careGapSummary || 'No care gaps identified.' }}
+          </p>
+        </section>
+
+        <section class="section-block">
+          <h3>Recommended Search Keywords</h3>
+          @if (keywords().length > 0) {
+          <div class="chip-wrap">
+            @for (keyword of keywords(); track trackByKeyword($index, keyword)) {
+            <span class="chip">{{ keyword.value }}</span>
+            }
+          </div>
+          } @else {
+          <p>No keywords available.</p>
+          }
+        </section>
+
+        @if (patientSummary(); as footerSummary) {
+        <footer class="analysis-footer">
+          <span>Analysis Completed</span>
+          <span>Patient ID: {{ footerSummary.patientId }}</span>
+          <span>Stored: {{ footerSummary.storageStatus }}</span>
+          <span>Timestamp: {{ footerSummary.timestamp | date: 'medium' }}</span>
+        </footer>
+        }
+      </article>
+      }
+    </section>
+  </section>
+</main>
+
