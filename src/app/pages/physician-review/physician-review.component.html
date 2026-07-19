@@ -1,0 +1,168 @@
+<header class="app-header">
+  <div class="header-brand">FirstLine AI</div>
+  <div class="header-user">Physician Review Workspace</div>
+</header>
+
+<main class="page-shell">
+  <section class="title-bar">
+    <div>
+      <h1>Physician Review Package</h1>
+      <p>AI Copilot workflow for pre-authorization and medical necessity review.</p>
+    </div>
+  </section>
+
+  <section class="workflow-strip" aria-label="Review workflow">
+    <span>1. Customize Package</span>
+    <span>2. Add Instructions</span>
+    <span>3. Generate Package</span>
+    <span>4. Review Output</span>
+    <span>5. Edit Draft</span>
+    <span>6. Request Approval</span>
+  </section>
+
+  @if (generateSuccess()) {
+  <section class="banner banner-success" role="status" aria-live="polite">
+    {{ generateSuccess() }}
+  </section>
+  }
+
+  @if (generateError()) {
+  <section class="banner banner-error" role="alert">
+    {{ generateError() }}
+  </section>
+  }
+
+  <section class="grid-12">
+    <article class="surface patient-info-card col-12">
+      <h2>Patient Information</h2>
+      <div class="patient-kv-row">
+        <div class="kv"><span>Patient</span><strong>{{ form.controls.patientName.value }}</strong></div>
+        <div class="kv"><span>Patient ID</span><strong>{{ form.controls.patientId.value }}</strong></div>
+        <div class="kv"><span>Physician</span><strong>{{ form.controls.physician.value }}</strong></div>
+        <div class="kv"><span>Appointment</span><strong>{{ form.controls.appointmentDate.value }}</strong></div>
+        <div class="kv"><span>Status</span><strong class="status-ready">{{ form.controls.status.value }}</strong></div>
+      </div>
+      @if (isFieldInvalid('patientId')) {
+      <small class="field-error">Patient ID is required.</small>
+      }
+    </article>
+
+    <section class="col-4">
+      <app-review-options
+        [options]="optionCards"
+        [selectedOptions]="selectedOptions()"
+        [maxSelections]="maxSelections"
+        (optionChanged)="onOptionChanged($event)"></app-review-options>
+    </section>
+
+    <section class="col-8">
+      <app-package-preview
+        [selectedOptionTitles]="selectedOptionTitles()"
+        [estimatedSeconds]="estimatedGenerationSeconds()"
+        [complexity]="complexity()"></app-package-preview>
+    </section>
+
+    <section class="col-12">
+      <app-physician-instructions
+        [control]="form.controls.doctorInstructions"
+        [maxLength]="1200"></app-physician-instructions>
+    </section>
+
+    <section class="col-12 action-row">
+      <button
+        class="primary-btn"
+        type="button"
+        [disabled]="loadingGenerate()"
+        (click)="generateReviewPackage()">
+        @if (loadingGenerate()) {
+        <span class="spinner" aria-hidden="true"></span>
+        <span>Generating package...</span>
+        } @else {
+        <span aria-hidden="true">✨</span>
+        <span>Generate Physician Review Package</span>
+        }
+      </button>
+    </section>
+
+    <section class="col-12 generated-review">
+      <article class="surface">
+        <h2>Generated Review Workspace</h2>
+        @if (!hasGeneratedReview()) {
+        <p class="placeholder">Generate a package to unlock diagnosis, timeline, evidence, recommendation, and draft editor.</p>
+        }
+      </article>
+
+      @if (reviewModel(); as review) {
+      @if (review.warnings.length > 0) {
+      <article class="surface warning-card">
+        <h3>Interpretation Notes</h3>
+        <ul>
+          @for (warning of review.warnings; track warning) {
+          <li>{{ warning }} Please regenerate the review package if needed.</li>
+          }
+        </ul>
+      </article>
+      }
+
+      <details class="accordion" open>
+        <summary>Diagnosis Summary</summary>
+        <app-diagnosis-summary [text]="review.diagnosisSummary"></app-diagnosis-summary>
+      </details>
+
+      <details class="accordion" open>
+        <summary>Treatment Timeline</summary>
+        <app-treatment-timeline
+          [items]="review.treatmentTimelineItems"
+          [narrative]="review.treatmentTimelineNarrative"></app-treatment-timeline>
+      </details>
+
+      <details class="accordion" open>
+        <summary>Clinical Evidence</summary>
+        <app-clinical-evidence [evidence]="review.clinicalEvidence"></app-clinical-evidence>
+      </details>
+
+      <details class="accordion" open>
+        <summary>Historical Patients</summary>
+        <app-historical-patients
+          [rows]="review.historicalPatients"
+          [narrative]="review.historicalPatientsNarrative"></app-historical-patients>
+      </details>
+
+      <details class="accordion" open>
+        <summary>Medical Necessity</summary>
+        <app-medical-necessity [text]="review.medicalNecessity"></app-medical-necessity>
+      </details>
+
+      <details class="accordion" open>
+        <summary>Authorization Recommendation</summary>
+        <article class="surface decision-card" [ngClass]="decisionClass(review.recommendedDecision)">
+          <h3>{{ review.recommendedDecision }}</h3>
+          <p>Confidence: {{ review.decisionConfidence }}</p>
+        </article>
+      </details>
+
+      <details class="accordion" open>
+        <summary>Pre-Authorization Draft</summary>
+        <app-authorization-draft
+          [draftText]="approvalDraftText()"
+          (saveDraft)="onDraftSaved($event)"
+          (cancelEdit)="onDraftCancelled()"
+          (requestApproval)="requestApproval()"></app-authorization-draft>
+      </details>
+
+      <app-footer-actions
+        [canRequestApproval]="canRequestApproval()"
+        [isRequesting]="loadingApproval()"
+        [successMessage]="approvalSuccess() ?? ''"
+        [trackingId]="approvalTrackingId()"
+        [errorMessage]="approvalError() ?? ''"
+        (back)="onBack()"
+        (regenerate)="onRegenerate()"
+        (saveDraft)="onSaveDraftFromFooter()"
+        (requestApproval)="requestApproval()"></app-footer-actions>
+      }
+    </section>
+  </section>
+</main>
+
+
