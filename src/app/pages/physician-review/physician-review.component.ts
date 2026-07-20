@@ -79,11 +79,7 @@ export class PhysicianReviewComponent {
   ];
 
   readonly form = this.fb.nonNullable.group({
-    patientId: ['P000004', [Validators.required]],
-    patientName: ['John Smith', [Validators.required]],
-    appointmentDate: ['20 Jul 2026', [Validators.required]],
-    physician: ['Dr Smith', [Validators.required]],
-    status: ['Ready', [Validators.required]],
+    patientId: ['', [Validators.required]],
     doctorInstructions: ['', [Validators.maxLength(1200)]]
   });
 

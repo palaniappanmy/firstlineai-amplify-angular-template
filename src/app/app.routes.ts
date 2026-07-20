@@ -21,6 +21,13 @@ export const routes: Routes = [
 	  )
   },
   {
+	path: 'payer-review',
+	loadComponent: () =>
+	  import('./pages/payer-review/payer-review.component').then(
+		(m) => m.PayerReviewComponent
+	  )
+  },
+  {
 	path: '**',
 	redirectTo: 'appointment-booking'
   }

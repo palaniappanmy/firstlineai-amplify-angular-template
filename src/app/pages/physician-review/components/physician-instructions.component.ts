@@ -42,7 +42,7 @@ import { FormControl, ReactiveFormsModule } from '@angular/forms';
 
       textarea {
         width: 100%;
-        min-height: 180px;
+        min-height: clamp(140px, 20vh, 200px);
         border: 1px solid #bfcee2;
         border-radius: 10px;
         padding: 0.9rem;

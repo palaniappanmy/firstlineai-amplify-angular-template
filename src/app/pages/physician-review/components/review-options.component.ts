@@ -59,20 +59,20 @@ import { ReviewOptionCard, ReviewOptionKey, ReviewOptions } from '../models';
 
       .tiles-grid {
         display: grid;
-        gap: 0.85rem;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.8rem;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
       }
 
       .tile {
         width: 100%;
-        min-height: 136px;
+        min-height: 120px;
         border: 1px solid #cfd9e7;
         border-radius: 12px;
         background: #fff;
-        display: grid;
-        grid-template-columns: 40px 1fr auto;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
         align-items: start;
-        gap: 0.8rem;
         text-align: left;
         padding: 0.95rem;
         cursor: pointer;
@@ -96,13 +96,14 @@ import { ReviewOptionCard, ReviewOptionKey, ReviewOptions } from '../models';
       }
 
       .tile-icon {
-        width: 40px;
-        height: 40px;
+        width: 36px;
+        height: 36px;
         border-radius: 10px;
         background: #f1f5fb;
         display: grid;
         place-items: center;
         font-size: 1.1rem;
+        flex-shrink: 0;
       }
 
       .tile.selected .tile-icon {
@@ -112,7 +113,7 @@ import { ReviewOptionCard, ReviewOptionKey, ReviewOptions } from '../models';
 
       .tile-content h3 {
         margin: 0 0 0.25rem;
-        font-size: 0.95rem;
+        font-size: 0.88rem;
       }
 
       .tile-content p {
@@ -144,7 +145,7 @@ import { ReviewOptionCard, ReviewOptionKey, ReviewOptions } from '../models';
         color: #5b6f86;
       }
 
-      @media (max-width: 760px) {
+      @media (max-width: 500px) {
         .tiles-grid {
           grid-template-columns: 1fr;
         }

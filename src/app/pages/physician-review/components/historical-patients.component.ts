@@ -69,15 +69,15 @@ import { HistoricalPatientRow } from '../models';
       table {
         width: 100%;
         border-collapse: collapse;
-        min-width: 820px;
       }
 
       th,
       td {
-        border-bottom: 1px solid #e0e7f2;
-        padding: 0.5rem;
+        border-bottom: 1px solid #e4ecf6;
+        padding: 0.55rem 0.65rem;
         text-align: left;
-        font-size: 0.9rem;
+        font-size: 0.85rem;
+        white-space: nowrap;
       }
 
       th {

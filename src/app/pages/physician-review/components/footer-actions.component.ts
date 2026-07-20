@@ -56,19 +56,18 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
         border-radius: 16px;
         padding: 1rem;
         box-shadow: 0 -2px 12px rgba(19, 42, 78, 0.08);
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 0.75rem 1rem;
+        flex-wrap: wrap;
+        align-items: center;
       }
 
       .left-actions,
       .right-actions {
         display: flex;
-        gap: 0.6rem;
-      }
-
-      .sticky-bar {
-        display: grid;
-        grid-template-columns: 1fr auto;
-        gap: 0.75rem;
-        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.5rem;
       }
 
       button {
@@ -108,14 +107,9 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
         color: #842029;
       }
 
-      @media (max-width: 760px) {
+      @media (max-width: 680px) {
         .sticky-bar {
           grid-template-columns: 1fr;
-        }
-
-        .left-actions,
-        .right-actions {
-          flex-wrap: wrap;
         }
       }
     `

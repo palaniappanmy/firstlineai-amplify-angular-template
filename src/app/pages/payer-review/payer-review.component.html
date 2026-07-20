@@ -1,0 +1,285 @@
+<header class="app-header">
+  <div class="header-brand">FirstLine<span> AI</span> <em class="role-tag">Payer</em></div>
+  <div class="header-right">
+    <span class="header-badge">Payer Authorization Workspace</span>
+  </div>
+</header>
+
+<main class="page-shell">
+  <section class="title-bar">
+    <div>
+      <h1>Payer Pre-Authorization Review</h1>
+      <p>Pull a patient pre-authorization request and submit a coverage decision.</p>
+    </div>
+  </section>
+
+  <!-- Pull form -->
+  <article class="surface pull-card">
+    <h2>Patient Pre-Authorization Request</h2>
+    <div class="pull-row">
+      <div class="input-group">
+        <label for="patientIdInput">Patient ID</label>
+        <input
+          id="patientIdInput"
+          type="text"
+          placeholder="Enter Patient ID (e.g. P000004)"
+          [formControl]="pullForm.controls.patientId" />
+        @if (isFieldInvalid('patientId')) {
+        <small class="field-error">Patient ID is required.</small>
+        }
+      </div>
+      <button
+        class="pull-btn"
+        type="button"
+        [disabled]="loading()"
+        (click)="pullPreAuth()">
+        @if (loading()) {
+          <span class="spinner" aria-hidden="true"></span>
+          <span>Pulling Request...</span>
+        } @else {
+          <span>⬇ Pull Pre-Authorization Request</span>
+        }
+      </button>
+    </div>
+  </article>
+
+  <!-- Banners -->
+  @if (success()) {
+  <section class="banner banner-success" role="status" aria-live="polite">
+    ✓ {{ success() }}
+  </section>
+  }
+
+  @if (error()) {
+  <section class="banner banner-error" role="alert">
+    ⚠ {{ error() }}
+  </section>
+  }
+
+  <!-- Pre-auth data -->
+  @if (viewModel(); as vm) {
+  <section class="review-layout">
+
+    <!-- LEFT: Clinical Details -->
+    <section class="details-panel">
+
+      @if (vm.patientSummary) {
+      <details class="accordion" open>
+        <summary>Patient Summary</summary>
+        <div class="section-body">
+          <p>{{ vm.patientSummary }}</p>
+        </div>
+      </details>
+      }
+
+      @if (vm.clinicalSummary) {
+      <details class="accordion" open>
+        <summary>Clinical Summary</summary>
+        <div class="section-body">
+          <p>{{ vm.clinicalSummary }}</p>
+        </div>
+      </details>
+      }
+
+      @if (vm.requestedTherapy || vm.previousTreatmentHistory.length > 0) {
+      <details class="accordion" open>
+        <summary>Treatment Information</summary>
+        <div class="section-body">
+          @if (vm.requestedTherapy) {
+          <div class="kv-inline">
+            <span class="kv-label">Requested Therapy</span>
+            <span class="therapy-badge">{{ vm.requestedTherapy }}</span>
+          </div>
+          }
+          @if (vm.previousTreatmentHistory.length > 0) {
+          <p class="sub-label">Previous Treatment History</p>
+          <ul class="pill-list">
+            @for (h of vm.previousTreatmentHistory; track h) {
+            <li>{{ h }}</li>
+            }
+          </ul>
+          }
+        </div>
+      </details>
+      }
+
+      @if (vm.medicalNecessity) {
+      <details class="accordion" open>
+        <summary>Medical Necessity</summary>
+        <div class="section-body doc-text">
+          <p>{{ vm.medicalNecessity }}</p>
+        </div>
+      </details>
+      }
+
+      @if (vm.clinicalRationale) {
+      <details class="accordion" open>
+        <summary>Clinical Rationale</summary>
+        <div class="section-body doc-text">
+          <p>{{ vm.clinicalRationale }}</p>
+        </div>
+      </details>
+      }
+
+      @if (vm.riskAssessment.length > 0) {
+      <details class="accordion" open>
+        <summary>Risk Assessment</summary>
+        <div class="section-body">
+          <div class="risk-grid">
+            @for (item of vm.riskAssessment; track item.label) {
+            <div class="risk-item">
+              <span class="risk-label">{{ item.label }}</span>
+              <p>{{ item.value }}</p>
+            </div>
+            }
+          </div>
+        </div>
+      </details>
+      }
+
+      @if (vm.recommendedSearchTerms.length > 0) {
+      <details class="accordion">
+        <summary>Recommended Evidence Terms</summary>
+        <div class="section-body">
+          <div class="chips">
+            @for (term of vm.recommendedSearchTerms; track term) {
+            <span class="chip">{{ term }}</span>
+            }
+          </div>
+        </div>
+      </details>
+      }
+
+      @for (section of vm.rawSections; track section.heading) {
+      <details class="accordion">
+        <summary>{{ section.heading }}</summary>
+        <div class="section-body">
+          <p>{{ section.body }}</p>
+        </div>
+      </details>
+      }
+
+    </section>
+
+    <!-- RIGHT: Summary + Decision -->
+    <aside class="decision-panel">
+
+      <!-- Recommendation summary -->
+      <article class="surface recommendation-card">
+        <h3>AI Recommendation</h3>
+        @if (vm.priorAuthRecommendation) {
+        <p class="rec-badge" [ngClass]="recommendationClass()">{{ vm.priorAuthRecommendation }}</p>
+        }
+        @if (vm.confidenceLevel) {
+        <div class="confidence-row">
+          <span>Confidence:</span>
+          <span class="conf-badge" [ngClass]="confidenceClass()">{{ vm.confidenceLevel }}</span>
+        </div>
+        }
+      </article>
+
+      <!-- Decision -->
+      <article class="surface decision-card">
+        <h3>Payer Decision</h3>
+        <p class="decision-hint">Select a coverage determination for this request.</p>
+
+        <div class="decision-options">
+
+          <!-- Approve -->
+          <button
+            type="button"
+            class="decision-tile"
+            [class.tile-approve]="selectedDecision() === 'Approve'"
+            (click)="selectDecision('Approve')">
+            <span class="tile-icon approve-icon">✓</span>
+            <div>
+              <strong>Approve</strong>
+              <p>Approve this pre-authorization request.</p>
+            </div>
+            <span class="tile-indicator" [class.active]="selectedDecision() === 'Approve'"></span>
+          </button>
+
+          <!-- Review -->
+          <button
+            type="button"
+            class="decision-tile"
+            [class.tile-review]="selectedDecision() === 'Review'"
+            (click)="selectDecision('Review')">
+            <span class="tile-icon review-icon">⟳</span>
+            <div>
+              <strong>Review</strong>
+              <p>Request further review with alternative drug recommendations.</p>
+            </div>
+            <span class="tile-indicator" [class.active]="selectedDecision() === 'Review'"></span>
+          </button>
+
+          @if (selectedDecision() === 'Review') {
+          <div class="drug-input-wrap">
+            <label for="recommendedDrugs">Recommended Drugs / Alternatives</label>
+            <textarea
+              id="recommendedDrugs"
+              rows="3"
+              placeholder="e.g. Methotrexate, alternative biologic therapy..."
+              [formControl]="decisionForm.controls.recommendedDrugs">
+            </textarea>
+          </div>
+          }
+
+          <!-- Offline to Discuss -->
+          <button
+            type="button"
+            class="decision-tile"
+            [class.tile-offline]="selectedDecision() === 'OfflineDiscuss'"
+            (click)="selectDecision('OfflineDiscuss')">
+            <span class="tile-icon offline-icon">💬</span>
+            <div>
+              <strong>Offline to Discuss</strong>
+              <p>Escalate for an offline discussion with the clinical team.</p>
+            </div>
+            <span class="tile-indicator" [class.active]="selectedDecision() === 'OfflineDiscuss'"></span>
+          </button>
+
+        </div>
+
+        @if (selectedDecision()) {
+        <div class="notes-group">
+          <label for="decisionNotes">Additional Notes (optional)</label>
+          <textarea
+            id="decisionNotes"
+            rows="2"
+            placeholder="Add any notes for the record..."
+            [formControl]="decisionForm.controls.notes">
+          </textarea>
+        </div>
+
+        <button
+          type="button"
+          class="confirm-btn"
+          [disabled]="submitting()"
+          (click)="confirmDecision()">
+          @if (submitting()) {
+            <span class="spinner" aria-hidden="true"></span>
+            <span>Submitting...</span>
+          } @else {
+            <span>Confirm Decision</span>
+          }
+        </button>
+        }
+
+        @if (decisionError()) {
+        <p class="decision-error">⚠ {{ decisionError() }}</p>
+        }
+
+        @if (decisionSuccess(); as result) {
+        <div class="decision-confirmed">
+          <p>✓ {{ result.message }}</p>
+          <p class="ref-id">Reference: {{ result.referenceId }}</p>
+        </div>
+        }
+      </article>
+
+    </aside>
+  </section>
+  }
+</main>
+

@@ -27,9 +27,21 @@ export class ReviewResponseMapperService {
     // Case 2: Lambda proxy wrapper { statusCode, headers, body: string }
     const bodyField = response['body'];
     if (typeof bodyField === 'string') {
-      return this.isErrorText(bodyField)
-        ? this.buildFallbackViewModel(bodyField)
-        : this.mapNarrativeText(bodyField);
+      if (this.isErrorText(bodyField)) {
+        return this.buildFallbackViewModel(bodyField);
+      }
+
+      // Try to parse body as JSON first (pre-auth structured response)
+      try {
+        const parsedBody = JSON.parse(bodyField);
+        if (this.isRecord(parsedBody)) {
+          return this.mapJsonPayload(parsedBody);
+        }
+      } catch {
+        // not JSON — fall through to narrative text parsing
+      }
+
+      return this.mapNarrativeText(bodyField);
     }
 
     // Case 3: Lambda proxy with body as JSON object
@@ -86,10 +98,29 @@ export class ReviewResponseMapperService {
       medicalNecessity: medicalNecessity.trim() || 'Not Available',
       recommendedDecision: decision,
       decisionConfidence: confidence,
-      preAuthorizationDraft: '',
+      preAuthorizationDraft: this.buildPreAuthLetterFromNarrative(text, sections),
       warnings,
       reviewPackage: { rawText: text, sections }
     };
+  }
+
+  private buildPreAuthLetterFromNarrative(rawText: string, sections: Record<string, string>): string {
+    const lines: string[] = ['PRE-AUTHORIZATION CLINICAL SUMMARY', '━'.repeat(52), ''];
+
+    const sectionEntries = Object.entries(sections);
+    if (sectionEntries.length > 0) {
+      for (const [key, value] of sectionEntries) {
+        if (value.trim()) {
+          lines.push(key.toUpperCase());
+          lines.push(value.trim());
+          lines.push('');
+        }
+      }
+    } else {
+      lines.push(rawText.trim());
+    }
+
+    return lines.join('\n').trim();
   }
 
   private parseNumberedSections(text: string): Record<string, string> {
@@ -278,36 +309,94 @@ export class ReviewResponseMapperService {
   // ─── JSON payload path ────────────────────────────────────────────────────
 
   private mapJsonPayload(root: Record<string, unknown>): PhysicianReviewViewModel {
+    // ── Diagnosis summary (try pre-auth fields first) ─────────────────────
     const diagnosisSummary =
-      this.pickString(root, ['diagnosisSummary', 'patientSummary', 'clinicalSummary']) ??
-      'Not Available';
+      this.pickString(root, [
+        'diagnosisSummary',
+        'patientSummary',
+        'clinicalSummary'
+      ]) ?? 'Not Available';
 
-    const timeline = this.normalizeTimeline(root);
-    const evidence = this.normalizeEvidence(root);
+    // ── Treatment timeline (previousTreatmentHistory takes precedence) ────
+    const prevHistory = root['previousTreatmentHistory'];
+    let timeline = this.normalizeTimeline(root);
+    if (timeline.items.length === 0 && Array.isArray(prevHistory) && prevHistory.length > 0) {
+      timeline = {
+        items: prevHistory.map((h, i) => ({
+          label: typeof h === 'string' ? h : `Treatment ${i + 1}`,
+          detail: typeof h === 'string' ? `Prior treatment: ${h}` : JSON.stringify(h)
+        })),
+        narrative: 'Treatment history extracted from pre-authorization data.'
+      };
+    }
+
+    // ── Clinical evidence (recommendedEvidenceSearchTerms → cards) ────────
+    let evidence = this.normalizeEvidence(root);
+    if (evidence.length === 0) {
+      const searchTerms = root['recommendedEvidenceSearchTerms'];
+      if (Array.isArray(searchTerms) && searchTerms.length > 0) {
+        evidence = searchTerms
+          .filter((t): t is string => typeof t === 'string')
+          .map((term) => ({
+            title: term,
+            source: 'AI Recommended',
+            summary: 'AI-recommended search term for supporting clinical evidence.',
+            confidence: 'High'
+          }));
+      }
+    }
+
+    // ── Historical patients ───────────────────────────────────────────────
     const historicalPatients = this.normalizeHistoricalPatients(root);
 
-    const medicalNecessity =
-      this.pickString(root, ['medicalNecessity', 'medicalNecessitySummary', 'necessityRationale']) ??
-      'Not Available';
+    // ── Medical necessity (include riskAssessment) ─────────────────────────
+    let medicalNecessity =
+      this.pickString(root, [
+        'medicalNecessity',
+        'medicalNecessitySummary',
+        'necessityRationale',
+        'clinicalRationale'
+      ]) ?? 'Not Available';
 
+    const riskAssessment = root['riskAssessment'];
+    if (this.isRecord(riskAssessment)) {
+      const riskLines = Object.entries(riskAssessment)
+        .filter(([, v]) => typeof v === 'string')
+        .map(([k, v]) => `  • ${this.camelToLabel(k)}: ${v}`)
+        .join('\n');
+      if (riskLines) {
+        medicalNecessity =
+          medicalNecessity !== 'Not Available'
+            ? `${medicalNecessity}\n\nRisk Assessment:\n${riskLines}`
+            : `Risk Assessment:\n${riskLines}`;
+      }
+    }
+
+    // ── Decision (priorAuthorizationRecommendation takes precedence) ──────
     const recommendedDecision = this.normalizeDecision(
-      this.pickString(root, ['recommendedDecision', 'decision', 'recommendation'])
+      this.pickString(root, [
+        'priorAuthorizationRecommendation',
+        'recommendedDecision',
+        'decision',
+        'recommendation'
+      ])
     );
 
     const decisionConfidence =
-      this.pickString(root, ['decisionConfidence', 'confidence']) ?? 'Medium';
+      this.pickString(root, ['confidenceLevel', 'decisionConfidence', 'confidence']) ?? 'Medium';
 
-    const preAuthorizationDraft =
-      this.pickString(root, [
-        'preAuthorizationDraft',
-        'preAuthorizationLetter',
-        'draftPreAuthorizationLetter',
-        'authorizationDraft'
-      ]) ?? '';
+    // ── Build pre-auth letter from all available fields ───────────────────
+    const existingDraft = this.pickString(root, [
+      'preAuthorizationDraft',
+      'preAuthorizationLetter',
+      'draftPreAuthorizationLetter',
+      'authorizationDraft'
+    ]);
+    const preAuthorizationDraft = existingDraft ?? this.buildPreAuthLetter(root);
 
     const warnings: string[] = [];
     if (!timeline.items.length && timeline.narrative === 'No information available.') {
-      warnings.push('Unable to interpret the treatment timeline.');
+      warnings.push('Treatment timeline data was not available in this response.');
     }
 
     return {
@@ -326,9 +415,138 @@ export class ReviewResponseMapperService {
         diagnosisSummary,
         treatmentTimelineItems: timeline.items,
         medicalNecessity,
-        recommendedDecision
+        recommendedDecision,
+        preAuthorizationDraft
       }
     };
+  }
+
+  // ── Pre-authorization letter builder ─────────────────────────────────────
+
+  private buildPreAuthLetter(source: Record<string, unknown>): string {
+    const lines: string[] = [];
+    const handled = new Set<string>();
+
+    const addSection = (heading: string, value: string | undefined, keys: string[]): void => {
+      keys.forEach((k) => handled.add(k));
+      if (!value) {
+        return;
+      }
+
+      lines.push(heading.toUpperCase());
+      lines.push(value);
+      lines.push('');
+    };
+
+    lines.push('PRE-AUTHORIZATION REQUEST');
+    lines.push('━'.repeat(52));
+    lines.push('');
+
+    addSection('Patient Summary', this.pickString(source, ['patientSummary']), ['patientSummary']);
+    addSection('Clinical Summary', this.pickString(source, ['clinicalSummary', 'clinicalHistory']), ['clinicalSummary', 'clinicalHistory']);
+
+    const requestedTherapy = this.pickString(source, ['requestedTherapy', 'therapy']);
+    handled.add('requestedTherapy');
+    handled.add('therapy');
+    if (requestedTherapy) {
+      lines.push('REQUESTED THERAPY');
+      lines.push(requestedTherapy);
+      lines.push('');
+    }
+
+    const prevHistory = source['previousTreatmentHistory'];
+    handled.add('previousTreatmentHistory');
+    if (Array.isArray(prevHistory) && prevHistory.length > 0) {
+      lines.push('PREVIOUS TREATMENT HISTORY');
+      prevHistory.forEach((h) => {
+        lines.push(`  • ${typeof h === 'string' ? h : JSON.stringify(h)}`);
+      });
+      lines.push('');
+    }
+
+    addSection('Medical Necessity', this.pickString(source, ['medicalNecessity', 'medicalNecessitySummary']), ['medicalNecessity', 'medicalNecessitySummary']);
+    addSection('Clinical Rationale', this.pickString(source, ['clinicalRationale', 'rationale']), ['clinicalRationale', 'rationale']);
+
+    const riskAssessment = source['riskAssessment'];
+    handled.add('riskAssessment');
+    if (this.isRecord(riskAssessment)) {
+      lines.push('RISK ASSESSMENT');
+      for (const [k, v] of Object.entries(riskAssessment)) {
+        if (typeof v === 'string') {
+          lines.push(`  • ${this.camelToLabel(k)}: ${v}`);
+        }
+      }
+      lines.push('');
+    }
+
+    const recommendation = this.pickString(source, ['priorAuthorizationRecommendation', 'recommendedDecision', 'recommendation']);
+    ['priorAuthorizationRecommendation', 'recommendedDecision', 'recommendation'].forEach((k) => handled.add(k));
+    if (recommendation) {
+      lines.push('RECOMMENDATION');
+      lines.push(recommendation);
+      lines.push('');
+    }
+
+    const confidence = this.pickString(source, ['confidenceLevel', 'confidence', 'decisionConfidence']);
+    ['confidenceLevel', 'confidence', 'decisionConfidence'].forEach((k) => handled.add(k));
+    if (confidence) {
+      lines.push('CONFIDENCE LEVEL');
+      lines.push(confidence);
+      lines.push('');
+    }
+
+    const searchTerms = source['recommendedEvidenceSearchTerms'];
+    handled.add('recommendedEvidenceSearchTerms');
+    if (Array.isArray(searchTerms) && searchTerms.length > 0) {
+      lines.push('RECOMMENDED EVIDENCE SEARCH TERMS');
+      searchTerms
+        .filter((t): t is string => typeof t === 'string')
+        .forEach((t) => lines.push(`  • ${t}`));
+      lines.push('');
+    }
+
+    // Render any extra unknown fields generically
+    const skipAlways = new Set(['statusCode', 'headers', 'body', 'diagnosisSummary',
+      'treatmentTimeline', 'timeline', 'clinicalTrajectory', 'clinicalEvidence',
+      'evidence', 'supportingEvidence', 'similarHistoricalPatients', 'historicalPatients',
+      'comparablePatients', 'preAuthorizationDraft', 'preAuthorizationLetter',
+      'draftPreAuthorizationLetter', 'authorizationDraft', 'timestamp', 'success',
+      'message', 'error', 'stored', 'patientId']);
+
+    const extraKeys = Object.keys(source).filter(
+      (k) => !handled.has(k) && !skipAlways.has(k) && source[k] !== null && source[k] !== undefined
+    );
+
+    if (extraKeys.length > 0) {
+      lines.push('━'.repeat(52));
+      lines.push('ADDITIONAL INFORMATION');
+      for (const key of extraKeys) {
+        const val = source[key];
+        lines.push('');
+        lines.push(this.camelToLabel(key).toUpperCase());
+        if (typeof val === 'string') {
+          lines.push(val);
+        } else if (Array.isArray(val)) {
+          val.forEach((item) => lines.push(`  • ${typeof item === 'string' ? item : JSON.stringify(item)}`));
+        } else if (this.isRecord(val)) {
+          for (const [k2, v2] of Object.entries(val)) {
+            if (typeof v2 === 'string') {
+              lines.push(`  • ${this.camelToLabel(k2)}: ${v2}`);
+            }
+          }
+        }
+      }
+      lines.push('');
+    }
+
+    return lines.join('\n').trim();
+  }
+
+  private camelToLabel(key: string): string {
+    return key
+      .replace(/([A-Z])/g, ' $1')
+      .replace(/^./, (c) => c.toUpperCase())
+      .trim();
   }
 
   private mergeWrappers(

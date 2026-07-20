@@ -1,6 +1,6 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, throwError } from 'rxjs';
+import { Observable, forkJoin, of, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 
 import { environment } from '../../environments/environment';
@@ -21,10 +21,55 @@ export class PhysicianReviewService {
 
   private readonly generateUrl =
     'https://htle2qzs9g.execute-api.ap-southeast-2.amazonaws.com/mvp/analyze-patient';
+  private readonly preAuthorizationUrl =
+    'https://4hkd767sc5.execute-api.ap-southeast-2.amazonaws.com/mvp/analyze-patient';
   private readonly approvalUrl = `${environment.apiBaseUrl}/requestApproval`;
 
   generateReviewPackage(payload: PhysicianReviewGenerateRequest): Observable<PhysicianReviewViewModel> {
-    return this.http.post(this.generateUrl, payload, { responseType: 'text' }).pipe(
+    return forkJoin({
+      primary: this.postForViewModel(this.generateUrl, payload),
+      // Keep the primary workflow usable if only the draft endpoint fails.
+      preAuthorization: this.postForViewModel(this.preAuthorizationUrl, payload).pipe(
+        catchError(() =>
+          of({
+            diagnosisSummary: 'Not Available',
+            treatmentTimelineItems: [],
+            treatmentTimelineNarrative: 'No information available.',
+            clinicalEvidence: [],
+            historicalPatients: [],
+            historicalPatientsNarrative: 'No information available.',
+            medicalNecessity: 'Not Available',
+            recommendedDecision: 'Unknown',
+            decisionConfidence: 'Unknown',
+            preAuthorizationDraft: '',
+            warnings: ['Unable to fetch pre-authorization draft from the secondary endpoint.'],
+            reviewPackage: {}
+          } as PhysicianReviewViewModel)
+        )
+      )
+    }).pipe(
+      map(({ primary, preAuthorization }) => {
+        const mergedDraft = preAuthorization.preAuthorizationDraft || primary.preAuthorizationDraft;
+
+        return {
+          ...primary,
+          preAuthorizationDraft: mergedDraft,
+          warnings: [...primary.warnings, ...preAuthorization.warnings],
+          reviewPackage: {
+            ...primary.reviewPackage,
+            preAuthorizationDraft: mergedDraft
+          }
+        };
+      }),
+      catchError((error: unknown) => throwError(() => this.toError(error)))
+    );
+  }
+
+  private postForViewModel(
+    url: string,
+    payload: PhysicianReviewGenerateRequest
+  ): Observable<PhysicianReviewViewModel> {
+    return this.http.post(url, payload, { responseType: 'text' }).pipe(
       map((rawText) => {
         let parsed: unknown = rawText;
         try {
@@ -32,9 +77,9 @@ export class PhysicianReviewService {
         } catch {
           // plain text — keep as-is
         }
+
         return this.mapper.mapGenerateResponse(parsed);
-      }),
-      catchError((error: unknown) => throwError(() => this.toError(error)))
+      })
     );
   }
 

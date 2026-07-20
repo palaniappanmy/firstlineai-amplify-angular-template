@@ -6,118 +6,210 @@ import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, signa
   standalone: true,
   imports: [CommonModule],
   template: `
-    <section class="section-card">
-      <h3>Pre-Authorization Draft</h3>
-
+    <section class="draft-shell">
       @if (!draftText) {
-      <p>No information available.</p>
+      <p class="empty-msg">No pre-authorization draft available. Generate a package with the Draft Pre-Authorization Letter option enabled.</p>
       } @else {
+
+      <!-- Toolbar -->
       <div class="toolbar">
         @if (!isEditing()) {
-        <button type="button" (click)="startEditing()">Edit</button>
+          <button type="button" class="toolbar-btn" (click)="startEditing()">✏ Edit</button>
         }
-        <button type="button" (click)="copyDraft()">Copy</button>
-        <button type="button" (click)="downloadPdf()">Download PDF</button>
-        <button type="button" (click)="toggleExpand()">{{ expanded() ? 'Collapse' : 'Expand' }}</button>
-        <button type="button" (click)="printDraft()">Print</button>
+        <button type="button" class="toolbar-btn" (click)="copyDraft()">⎘ Copy</button>
+        <button type="button" class="toolbar-btn" (click)="downloadPdf()">⬇ Download</button>
+        <button type="button" class="toolbar-btn" (click)="toggleExpand()">{{ expanded() ? '⊖ Collapse' : '⊕ Expand' }}</button>
+        <button type="button" class="toolbar-btn" (click)="printDraft()">⎙ Print</button>
       </div>
 
-      <textarea
-        [rows]="expanded() ? 20 : 14"
-        [class.expanded]="expanded()"
-        [readOnly]="!isEditing()"
-        [value]="workingDraft()"
-        (input)="updateWorkingDraft($event)"></textarea>
-
-      @if (isEditing()) {
-      <div class="editor-actions">
-        <button type="button" class="primary" (click)="save()">Save Draft</button>
-        <button type="button" (click)="cancel()">Cancel</button>
-      </div>
+      <!-- Document view (read-only) -->
+      @if (!isEditing()) {
+        <div class="letter-viewer" [class.expanded]="expanded()">
+          @for (block of letterBlocks(); track block.heading + block.body) {
+            @if (block.isHeading) {
+              <p class="letter-heading">{{ block.heading }}</p>
+            } @else if (block.isDivider) {
+              <hr class="letter-divider" />
+            } @else {
+              <p class="letter-body" [class.bullet]="block.isBullet">{{ block.body }}</p>
+            }
+          }
+        </div>
       }
 
-      <div class="bottom-actions">
-        <button type="button" class="secondary" (click)="save()" [disabled]="!isEditing()">Save Draft</button>
-        <button type="button" class="primary" [disabled]="!workingDraft().trim()" (click)="requestApproval.emit()">
-          Request Approval
-        </button>
-      </div>
+      <!-- Edit mode -->
+      @if (isEditing()) {
+        <div class="editor-actions top-actions">
+          <button type="button" class="btn-primary" (click)="save()">✔ Save Draft</button>
+          <button type="button" class="btn-secondary" (click)="cancel()">✕ Cancel</button>
+        </div>
+        <textarea
+          class="editor-area"
+          [class.expanded]="expanded()"
+          [value]="workingDraft()"
+          (input)="updateWorkingDraft($event)"
+          spellcheck="false"></textarea>
+      }
 
       @if (statusMessage()) {
-      <p class="status">{{ statusMessage() }}</p>
+        <p class="status-msg">{{ statusMessage() }}</p>
       }
+
+      <!-- Bottom actions -->
+      <div class="bottom-actions">
+        <button type="button" class="btn-secondary" (click)="save()" [disabled]="!isEditing()">Save Draft</button>
+        <button type="button" class="btn-primary" [disabled]="!workingDraft().trim()" (click)="requestApproval.emit()">
+          ✓ Request Approval
+        </button>
+      </div>
       }
     </section>
   `,
-  styles: [
-    `
-      .section-card {
-        background: #fff;
-        border: 1px solid #d8e2ef;
-        border-radius: 16px;
-        padding: 1.25rem;
-      }
+  styles: [`
+    .draft-shell {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
 
-      h3 {
-        margin: 0 0 0.6rem;
-      }
+    .empty-msg {
+      color: #5a7088;
+      font-size: 0.9rem;
+      padding: 0.5rem 0;
+    }
 
-      .toolbar,
-      .editor-actions {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.6rem;
-        margin-bottom: 0.7rem;
-      }
+    /* Toolbar */
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+    }
 
-      .toolbar button,
-      .editor-actions button,
-      .bottom-actions button {
-        border: 1px solid #cad6e6;
-        background: #fff;
-        border-radius: 8px;
-        padding: 0.45rem 0.75rem;
-      }
+    .toolbar-btn {
+      font-size: 0.8rem;
+      padding: 0.35rem 0.7rem;
+      border: 1px solid #c4d3e6;
+      border-radius: 7px;
+      background: #f8fbff;
+      color: #2c4a6a;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
 
-      textarea {
-        width: 100%;
-        border: 1px solid #c7d3e4;
-        border-radius: 10px;
-        min-height: 400px;
-        padding: 0.9rem;
-        resize: vertical;
-        font-family: inherit;
-        line-height: 1.45;
-      }
+    .toolbar-btn:hover {
+      background: #e8f1ff;
+      border-color: #7aaeff;
+    }
 
-      textarea.expanded {
-        min-height: 560px;
-      }
+    /* Letter viewer */
+    .letter-viewer {
+      background: #fff;
+      border: 1px solid #d8e6f5;
+      border-radius: 10px;
+      padding: 1.5rem 2rem;
+      min-height: clamp(260px, 38vh, 480px);
+      max-height: clamp(480px, 52vh, 640px);
+      overflow-y: auto;
+      font-family: 'Georgia', 'Times New Roman', serif;
+      font-size: 0.92rem;
+      line-height: 1.65;
+      color: #1a2e47;
+      box-shadow: inset 0 0 0 1px rgba(30,97,214,0.04);
+    }
 
-      .primary {
-        background: #1e61d6;
-        color: #fff;
-        border-color: #1e61d6;
-      }
+    .letter-viewer.expanded {
+      max-height: clamp(640px, 72vh, 960px);
+    }
 
-      .secondary {
-        background: #fff;
-        color: #24476f;
-      }
+    .letter-heading {
+      font-family: 'Inter', 'Segoe UI', sans-serif;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.09em;
+      color: #1e61d6;
+      margin: 1rem 0 0.25rem;
+      text-transform: uppercase;
+    }
 
-      .bottom-actions {
-        margin-top: 0.85rem;
-        display: flex;
-        justify-content: flex-end;
-        gap: 0.6rem;
-      }
+    .letter-body {
+      margin: 0 0 0.4rem;
+      color: #1a2e47;
+    }
 
-      .status {
-        margin: 0.7rem 0 0;
-        color: #155724;
-      }
-    `
-  ]
+    .letter-body.bullet {
+      padding-left: 0.5rem;
+      color: #2f4965;
+    }
+
+    .letter-divider {
+      border: none;
+      border-top: 1px solid #d4e4f7;
+      margin: 0.75rem 0;
+    }
+
+    /* Edit mode */
+    .top-actions {
+      margin-bottom: 0.35rem;
+    }
+
+    .editor-area {
+      width: 100%;
+      min-height: clamp(280px, 40vh, 520px);
+      border: 1px solid #bfcfe4;
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      resize: vertical;
+      font-family: 'Courier New', monospace;
+      font-size: 0.88rem;
+      line-height: 1.55;
+      background: #fffffe;
+      color: #1a2e47;
+    }
+
+    .editor-area.expanded {
+      min-height: clamp(480px, 60vh, 720px);
+    }
+
+    .editor-actions,
+    .top-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .bottom-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+
+    .btn-primary {
+      background: #1e61d6;
+      color: #fff;
+      border: 1px solid #1e61d6;
+      border-radius: 8px;
+      padding: 0.5rem 1rem;
+      font-weight: 600;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: #1750bb;
+    }
+
+    .btn-secondary {
+      background: #fff;
+      color: #1e3a5f;
+      border: 1px solid #bfcfe4;
+      border-radius: 8px;
+      padding: 0.5rem 1rem;
+    }
+
+    .status-msg {
+      font-size: 0.82rem;
+      color: #0d6e35;
+    }
+  `]
 })
 export class AuthorizationDraftComponent implements OnChanges {
   @Input({ required: true }) draftText = '';
@@ -131,9 +223,13 @@ export class AuthorizationDraftComponent implements OnChanges {
   readonly workingDraft = signal('');
   readonly statusMessage = signal('');
 
+  readonly letterBlocks = signal<LetterBlock[]>([]);
+
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['draftText']) {
-      this.workingDraft.set(this.draftText ?? '');
+      const text = this.draftText ?? '';
+      this.workingDraft.set(text);
+      this.letterBlocks.set(this.parseLetterBlocks(text));
       this.isEditing.set(false);
     }
   }
@@ -145,20 +241,28 @@ export class AuthorizationDraftComponent implements OnChanges {
 
   updateWorkingDraft(event: Event): void {
     const target = event.target as HTMLTextAreaElement | null;
-    this.workingDraft.set(target?.value ?? '');
+    const value = target?.value ?? '';
+    this.workingDraft.set(value);
+    this.letterBlocks.set(this.parseLetterBlocks(value));
   }
 
   save(): void {
     this.saveDraft.emit(this.workingDraft());
     this.isEditing.set(false);
-    this.statusMessage.set('Draft saved.');
+    this.statusMessage.set('Draft saved successfully.');
   }
 
   cancel(): void {
-    this.workingDraft.set(this.draftText ?? '');
+    const original = this.draftText ?? '';
+    this.workingDraft.set(original);
+    this.letterBlocks.set(this.parseLetterBlocks(original));
     this.isEditing.set(false);
     this.cancelEdit.emit();
-    this.statusMessage.set('Draft changes discarded.');
+    this.statusMessage.set('');
+  }
+
+  toggleExpand(): void {
+    this.expanded.set(!this.expanded());
   }
 
   async copyDraft(): Promise<void> {
@@ -169,53 +273,84 @@ export class AuthorizationDraftComponent implements OnChanges {
 
     if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
       await navigator.clipboard.writeText(text);
-      this.statusMessage.set('Draft copied to clipboard.');
-      return;
+      this.statusMessage.set('Copied to clipboard.');
     }
-
-    this.statusMessage.set('Clipboard is not available in this browser context.');
-  }
-
-  toggleExpand(): void {
-    this.expanded.set(!this.expanded());
   }
 
   downloadPdf(): void {
-    this.openPrintableWindow();
+    this.openPrintWindow(false);
   }
 
   printDraft(): void {
-    this.openPrintableWindow(true);
+    this.openPrintWindow(true);
   }
 
-  private openPrintableWindow(shouldPrint = false): void {
+  private openPrintWindow(shouldPrint: boolean): void {
     const text = this.workingDraft();
     if (!text || typeof window === 'undefined') {
       return;
     }
 
-    const draftWindow = window.open('', '_blank', 'width=900,height=700');
-    if (!draftWindow) {
-      this.statusMessage.set('Unable to open print window in this browser context.');
+    const win = window.open('', '_blank', 'width=900,height=700');
+    if (!win) {
+      this.statusMessage.set('Unable to open print window.');
       return;
     }
 
-    draftWindow.document.write(
-      `<html><head><title>Pre-Authorization Draft</title></head><body><pre style="white-space:pre-wrap;font-family:Arial, sans-serif;line-height:1.5">${text.replace(
-        /</g,
-        '&lt;'
-      )}</pre></body></html>`
-    );
-    draftWindow.document.close();
+    const escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    win.document.write(`<html><head><title>Pre-Authorization Draft</title>
+      <style>body{font-family:Georgia,serif;font-size:13px;line-height:1.6;max-width:750px;margin:2rem auto;color:#1a2e47}
+      pre{white-space:pre-wrap;word-break:break-word}</style></head>
+      <body><pre>${escaped}</pre></body></html>`);
+    win.document.close();
 
     if (shouldPrint) {
-      draftWindow.print();
+      win.print();
       this.statusMessage.set('Print dialog opened.');
-      return;
+    } else {
+      this.statusMessage.set('Opened for Save as PDF.');
+    }
+  }
+
+  private parseLetterBlocks(text: string): LetterBlock[] {
+    const blocks: LetterBlock[] = [];
+
+    for (const rawLine of text.split('\n')) {
+      const line = rawLine;
+
+      if (!line.trim()) {
+        continue;
+      }
+
+      // Divider line (━ or ─ repeated)
+      if (/^[━─=]{4,}/.test(line.trim())) {
+        blocks.push({ isHeading: false, isDivider: true, isBullet: false, heading: '', body: '' });
+        continue;
+      }
+
+      // ALL-CAPS heading (3+ chars, no lowercase letters)
+      if (/^[A-Z][A-Z0-9 '&\-:]{2,}$/.test(line.trim()) && !/[a-z]/.test(line)) {
+        blocks.push({ isHeading: true, isDivider: false, isBullet: false, heading: line.trim(), body: '' });
+        continue;
+      }
+
+      // Bullet point
+      if (/^\s*[•\-\*]\s/.test(line)) {
+        blocks.push({ isHeading: false, isDivider: false, isBullet: true, heading: '', body: line.trim() });
+        continue;
+      }
+
+      blocks.push({ isHeading: false, isDivider: false, isBullet: false, heading: '', body: line });
     }
 
-    this.statusMessage.set('Draft opened for Save as PDF.');
+    return blocks;
   }
 }
 
-
+interface LetterBlock {
+  isHeading: boolean;
+  isDivider: boolean;
+  isBullet: boolean;
+  heading: string;
+  body: string;
+}

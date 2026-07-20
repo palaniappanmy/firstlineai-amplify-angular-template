@@ -47,8 +47,8 @@ import { EvidenceCard } from '../models';
 
       .evidence-grid {
         display: grid;
-        gap: 0.9rem;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.85rem;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
       }
 
       .evidence-card {
@@ -93,11 +93,6 @@ import { EvidenceCard } from '../models';
         margin-top: 0.3rem;
       }
 
-      @media (max-width: 900px) {
-        .evidence-grid {
-          grid-template-columns: 1fr;
-        }
-      }
     `
   ]
 })
