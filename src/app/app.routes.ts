@@ -28,6 +28,13 @@ export const routes: Routes = [
 	  )
   },
   {
+	path: 'history-insights',
+	loadComponent: () =>
+	  import('./pages/history-insights/history-insights.component').then(
+		(m) => m.HistoryInsightsComponent
+	  )
+  },
+  {
 	path: '**',
 	redirectTo: 'appointment-booking'
   }

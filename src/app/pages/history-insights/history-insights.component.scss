@@ -1,0 +1,282 @@
+:host {
+  display: block;
+  min-height: 100vh;
+  background: #f3f6fb;
+  color: #12243a;
+}
+
+.app-header {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.5rem;
+  background: #0c2d6b;
+  color: #fff;
+}
+
+.header-brand {
+  font-weight: 700;
+  font-size: 1.1rem;
+  letter-spacing: 0.2px;
+}
+
+.header-brand span {
+  color: #7aaeff;
+}
+
+.header-user {
+  font-size: 0.92rem;
+  color: #d9e8ff;
+}
+
+.page-shell {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.2rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.title-bar h1 {
+  margin: 0;
+  font-size: 1.45rem;
+}
+
+.title-bar h1 span {
+  color: #3d5f83;
+  font-size: 1rem;
+}
+
+.title-bar p {
+  margin: 0.35rem 0 0;
+  color: #425f80;
+  max-width: 920px;
+}
+
+.surface {
+  background: #fff;
+  border: 1px solid #dbe5f3;
+  border-radius: 14px;
+  padding: 1rem;
+}
+
+.banner-info {
+  border-color: #cde1ff;
+  background: #edf5ff;
+}
+
+.banner-info h2 {
+  margin: 0;
+  color: #1d436f;
+  font-size: 1.02rem;
+}
+
+.banner-info p {
+  margin: 0.45rem 0 0;
+  color: #35506d;
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.card h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.02rem;
+}
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(140px, 1fr));
+  gap: 0.65rem;
+}
+
+.kpi {
+  border: 1px solid #e4ebf7;
+  border-radius: 10px;
+  padding: 0.6rem;
+  display: grid;
+  gap: 0.2rem;
+}
+
+.kpi-icon {
+  width: 1.2rem;
+  height: 1.2rem;
+  border-radius: 999px;
+  display: inline-grid;
+  place-items: center;
+  font-size: 0.68rem;
+  color: #fff;
+}
+
+.kpi-label {
+  font-size: 0.8rem;
+  color: #4b6687;
+}
+
+.kpi strong {
+  font-size: 1.06rem;
+}
+
+.kpi-green .kpi-icon {
+  background: #2f9e44;
+}
+
+.kpi-blue .kpi-icon {
+  background: #1c7ed6;
+}
+
+.kpi-amber .kpi-icon {
+  background: #f08c00;
+}
+
+.kpi-purple .kpi-icon {
+  background: #7048e8;
+}
+
+.cluster-list {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.cluster-head,
+.cluster-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+}
+
+.progress-track {
+  margin-top: 0.35rem;
+  height: 0.55rem;
+  border-radius: 999px;
+  background: #e8eef8;
+  overflow: hidden;
+}
+
+.progress-fill {
+  display: block;
+  height: 100%;
+  background: #2f73da;
+}
+
+.approval-stack {
+  display: flex;
+  width: 100%;
+  height: 0.95rem;
+  border-radius: 999px;
+  overflow: hidden;
+  background: #eef2f9;
+}
+
+.approval-stack .approved {
+  background: #2f9e44;
+}
+
+.approval-stack .denied {
+  background: #c92a2a;
+}
+
+.approval-legend {
+  margin-top: 0.6rem;
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+}
+
+.details-list {
+  display: grid;
+  gap: 0.6rem;
+}
+
+details {
+  border: 1px solid #e0e8f5;
+  border-radius: 10px;
+  background: #fff;
+  padding: 0.6rem 0.7rem;
+}
+
+summary {
+  cursor: pointer;
+  display: grid;
+}
+
+summary small {
+  color: #4d6685;
+}
+
+.detail-grid {
+  margin-top: 0.65rem;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.detail-grid p {
+  margin: 0;
+  font-size: 0.86rem;
+}
+
+.example-cases {
+  margin-top: 0.7rem;
+}
+
+.example-cases ul {
+  list-style: none;
+  margin: 0.35rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.example-cases li {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.84rem;
+}
+
+.decision-approved {
+  color: #1f8a3a;
+  font-weight: 700;
+}
+
+.decision-denied {
+  color: #b42318;
+  font-weight: 700;
+}
+
+.skeleton-grid .skeleton-card {
+  min-height: 170px;
+  background: linear-gradient(90deg, #f3f7fc 25%, #e9f0f9 37%, #f3f7fc 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.25s ease-in-out infinite;
+}
+
+.error-card h2 {
+  margin: 0;
+  color: #b42318;
+}
+
+.error-card p {
+  margin: 0.5rem 0 0;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+@media (max-width: 980px) {
+  .grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
+

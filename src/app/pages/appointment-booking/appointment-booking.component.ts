@@ -25,11 +25,12 @@ import {
   RiskLevel
 } from '../../models/patient-analysis.models';
 import { PatientAnalysisService } from '../../services/patient-analysis.service';
+import { JourneyHeaderComponent } from '../../components/journey-header.component';
 
 @Component({
   selector: 'app-appointment-booking',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, HttpClientModule],
+  imports: [CommonModule, ReactiveFormsModule, HttpClientModule, JourneyHeaderComponent],
   templateUrl: './appointment-booking.component.html',
   styleUrl: './appointment-booking.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -207,4 +208,3 @@ export class AppointmentBookingComponent {
     }
   }
 }
-

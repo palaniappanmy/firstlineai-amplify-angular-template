@@ -1,0 +1,107 @@
+{
+  "summary": {
+    "historicalCases": 124,
+    "averageSimilarity": 92,
+    "approvalRate": 87,
+    "averageReviewDays": 1.6
+  },
+  "approvalSummary": {
+    "approved": 108,
+    "denied": 16
+  },
+  "clusters": [
+    {
+      "id": "C001",
+      "name": "Lumbar Fusion",
+      "patientCount": 42,
+      "similarity": 96,
+      "approvalRate": 91,
+      "averageAge": 61,
+      "averageLos": 2.3,
+      "topDiagnosis": "Lumbar Spinal Stenosis",
+      "recommendation": "Approval commonly observed after documented conservative treatment.",
+      "cases": [
+        {
+          "patientId": "H00021",
+          "decision": "Approved"
+        },
+        {
+          "patientId": "H00054",
+          "decision": "Approved"
+        },
+        {
+          "patientId": "H00118",
+          "decision": "Denied"
+        }
+      ]
+    },
+    {
+      "id": "C002",
+      "name": "Degenerative Disc Disease",
+      "patientCount": 28,
+      "similarity": 91,
+      "approvalRate": 84,
+      "averageAge": 58,
+      "averageLos": 1.8,
+      "topDiagnosis": "Degenerative Disc Disease",
+      "recommendation": "Additional imaging was frequently requested.",
+      "cases": [
+        {
+          "patientId": "H00204",
+          "decision": "Approved"
+        },
+        {
+          "patientId": "H00251",
+          "decision": "Denied"
+        }
+      ]
+    },
+    {
+      "id": "C003",
+      "name": "Spinal Stenosis",
+      "patientCount": 31,
+      "similarity": 89,
+      "approvalRate": 82,
+      "averageAge": 65,
+      "averageLos": 2.1,
+      "topDiagnosis": "Lumbar Spinal Stenosis",
+      "recommendation": "Review conservative treatment duration before approval.",
+      "cases": [
+        {
+          "patientId": "H00318",
+          "decision": "Approved"
+        },
+        {
+          "patientId": "H00325",
+          "decision": "Approved"
+        },
+        {
+          "patientId": "H00342",
+          "decision": "Denied"
+        }
+      ]
+    },
+    {
+      "id": "C004",
+      "name": "Other Related Conditions",
+      "patientCount": 23,
+      "similarity": 86,
+      "approvalRate": 78,
+      "averageAge": 57,
+      "averageLos": 1.7,
+      "topDiagnosis": "Chronic Low Back Pain",
+      "recommendation": "Escalate to peer review when conservative care duration is unclear.",
+      "cases": [
+        {
+          "patientId": "H00406",
+          "decision": "Approved"
+        },
+        {
+          "patientId": "H00411",
+          "decision": "Denied"
+        }
+      ]
+    }
+  ]
+}
+

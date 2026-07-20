@@ -23,6 +23,7 @@ import { PhysicianInstructionsComponent } from './components/physician-instructi
 import { ReviewOptionsComponent } from './components/review-options.component';
 import { TreatmentTimelineComponent } from './components/treatment-timeline.component';
 import { PhysicianReviewService } from '../../services/physician-review.service';
+import { JourneyHeaderComponent } from '../../components/journey-header.component';
 
 @Component({
   selector: 'app-physician-review',
@@ -30,6 +31,7 @@ import { PhysicianReviewService } from '../../services/physician-review.service'
   imports: [
     CommonModule,
     ReactiveFormsModule,
+    JourneyHeaderComponent,
     ReviewOptionsComponent,
     PackagePreviewComponent,
     PhysicianInstructionsComponent,
@@ -266,5 +268,3 @@ export class PhysicianReviewComponent {
     }
   }
 }
-
-

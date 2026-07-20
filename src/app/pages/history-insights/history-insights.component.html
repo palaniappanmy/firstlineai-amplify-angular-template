@@ -1,0 +1,141 @@
+<app-journey-header></app-journey-header>
+
+<main class="page-shell">
+  <section class="title-bar">
+    <div>
+      <h1>Historical Patient Insights <span>(Demo Data)</span></h1>
+      <p>
+        This section demonstrates how clustered historical patient insights will be visualized.
+        For the MVP, clusters are generated from curated mock datasets.
+      </p>
+    </div>
+  </section>
+
+  <section class="surface banner-info" role="note" aria-label="Demo visualization scope">
+    <h2>Demo Visualization</h2>
+    <p>
+      Data shown in this section is generated from mock datasets for MVP demonstration purposes.
+      Production implementation will retrieve historical insights from enterprise clinical data services
+      (for example SageMaker, Bedrock Knowledge Bases, or a custom similarity service).
+    </p>
+  </section>
+
+  @if (loading()) {
+  <section class="grid-2 skeleton-grid" aria-live="polite" aria-busy="true">
+    <article class="surface skeleton-card"></article>
+    <article class="surface skeleton-card"></article>
+    <article class="surface skeleton-card"></article>
+    <article class="surface skeleton-card"></article>
+  </section>
+  } @else if (error()) {
+  <section class="surface error-card" role="alert">
+    <h2>Unable to Load Insights</h2>
+    <p>{{ error() }}</p>
+  </section>
+  } @else {
+  @if (insights(); as data) {
+  <section class="grid-2">
+    <article class="surface card">
+      <h2>Top Summary Metrics</h2>
+      <div class="kpi-grid">
+        <div class="kpi kpi-green">
+          <span class="kpi-icon" aria-hidden="true">#</span>
+          <span class="kpi-label">Historical Cases</span>
+          <strong>{{ data.summary.historicalCases }}</strong>
+        </div>
+        <div class="kpi kpi-blue">
+          <span class="kpi-icon" aria-hidden="true">%</span>
+          <span class="kpi-label">Average Similarity</span>
+          <strong>{{ data.summary.averageSimilarity }}%</strong>
+        </div>
+        <div class="kpi kpi-amber">
+          <span class="kpi-icon" aria-hidden="true">+</span>
+          <span class="kpi-label">Historical Approval Rate</span>
+          <strong>{{ data.summary.approvalRate }}%</strong>
+        </div>
+        <div class="kpi kpi-purple">
+          <span class="kpi-icon" aria-hidden="true">t</span>
+          <span class="kpi-label">Average Review Time</span>
+          <strong>{{ data.summary.averageReviewDays }} Days</strong>
+        </div>
+      </div>
+    </article>
+
+    <article class="surface card">
+      <h2>Historical Case Groups</h2>
+      <div class="cluster-list">
+        @for (cluster of data.clusters; track cluster.id) {
+        <div class="cluster-row">
+          <div class="cluster-head">
+            <strong>{{ cluster.name }}</strong>
+            <span>{{ cluster.patientCount }} Patients</span>
+          </div>
+          <div class="progress-track" aria-hidden="true">
+            <span
+              class="progress-fill"
+              [style.width.%]="clusterPercentage(cluster, data.summary.historicalCases)">
+            </span>
+          </div>
+          <div class="cluster-foot">
+            {{ clusterPercentage(cluster, data.summary.historicalCases) }}%
+          </div>
+        </div>
+        }
+      </div>
+    </article>
+
+    <article class="surface card">
+      <h2>Historical Approval Outcomes</h2>
+      <div class="approval-stack" role="img" aria-label="Approved and denied distribution">
+        <span class="approved" [style.width.%]="approvedPercent()"></span>
+        <span class="denied" [style.width.%]="deniedPercent()"></span>
+      </div>
+      <div class="approval-legend">
+        <span><strong>{{ approvedPercent() }}%</strong> Approved</span>
+        <span><strong>{{ deniedPercent() }}%</strong> Denied</span>
+      </div>
+    </article>
+
+    <article class="surface card">
+      <h2>Cluster Details</h2>
+      <div class="details-list">
+        @for (cluster of data.clusters; track cluster.id) {
+        <details>
+          <summary>
+            <span>{{ cluster.name }} Patients</span>
+            <small>{{ cluster.patientCount }} Historical Cases | Average Similarity {{ cluster.similarity }}%</small>
+          </summary>
+
+          <div class="detail-grid">
+            <p><strong>Most Common Diagnosis:</strong> {{ cluster.topDiagnosis }}</p>
+            <p><strong>Average Patient Age:</strong> {{ cluster.averageAge }}</p>
+            <p><strong>Average LOS:</strong> {{ cluster.averageLos }} Days</p>
+            <p><strong>Approval Rate:</strong> {{ cluster.approvalRate }}%</p>
+            <p><strong>Typical Recommendation:</strong> {{ cluster.recommendation }}</p>
+          </div>
+
+          @if (cluster.cases.length > 0) {
+          <div class="example-cases">
+            <strong>Example Historical Cases</strong>
+            <ul>
+              @for (item of cluster.cases; track item.patientId) {
+              <li>
+                <span>{{ item.patientId }}</span>
+                <span [class.decision-approved]="item.decision === 'Approved'" [class.decision-denied]="item.decision === 'Denied'">
+                  {{ item.decision }}
+                </span>
+              </li>
+              }
+            </ul>
+          </div>
+          }
+        </details>
+        }
+      </div>
+    </article>
+  </section>
+  }
+  }
+</main>
+
+

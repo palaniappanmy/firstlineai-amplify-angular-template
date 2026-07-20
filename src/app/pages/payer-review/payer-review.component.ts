@@ -14,11 +14,12 @@ import { finalize } from 'rxjs/operators';
 
 import { PayerDecision, PayerReviewViewModel } from './payer-review.models';
 import { PayerReviewService } from '../../services/payer-review.service';
+import { JourneyHeaderComponent } from '../../components/journey-header.component';
 
 @Component({
   selector: 'app-payer-review',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, HttpClientModule],
+  imports: [CommonModule, ReactiveFormsModule, HttpClientModule, JourneyHeaderComponent],
   templateUrl: './payer-review.component.html',
   styleUrl: './payer-review.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -144,4 +145,3 @@ export class PayerReviewComponent {
     return control.invalid && (control.touched || control.dirty);
   }
 }
-
